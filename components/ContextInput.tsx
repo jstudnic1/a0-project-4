@@ -3,37 +3,44 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 type BleedingSpeed = 'slow' | 'moderate' | 'spurting';
+type TimeRange = '0-5 mins' | '5-10 mins' | '10-30 mins' | '30+ mins';
 
 export default function ContextInput({ onComplete }: { onComplete: () => void }) {
-  const [minutes, setMinutes] = useState<number>(0);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange | null>(null);
   const [bleeding, setBleeding] = useState<BleedingSpeed | null>(null);
 
+  const timeRanges: TimeRange[] = ['0-5 mins', '5-10 mins', '10-30 mins', '30+ mins'];
+
   const handleComplete = () => {
-    if (bleeding) {
+    if (bleeding && selectedTimeRange) {
       onComplete();
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Quick Assessment</Text>
-      
+      <Text style={styles.title}>Combat Wound Assessment</Text>
+
       <View style={styles.section}>
-        <Text style={styles.label}>Minutes since injury:</Text>
-        <View style={styles.timeControls}>
-          <TouchableOpacity 
-            style={styles.timeButton}
-            onPress={() => setMinutes(m => Math.max(0, m - 1))}
-          >
-            <MaterialIcons name="remove" size={24} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.timeText}>{minutes}</Text>
-          <TouchableOpacity 
-            style={styles.timeButton}
-            onPress={() => setMinutes(m => m + 1)}
-          >
-            <MaterialIcons name="add" size={24} color="white" />
-          </TouchableOpacity>
+        <Text style={styles.label}>Time since injury:</Text>
+        <View style={styles.timeRangeContainer}>
+          {timeRanges.map((range) => (
+            <TouchableOpacity
+              key={range}
+              style={[
+                styles.timeRangeButton,
+                selectedTimeRange === range && styles.timeRangeButtonSelected
+              ]}
+              onPress={() => setSelectedTimeRange(range)}
+            >
+              <Text style={[
+                styles.timeRangeButtonText,
+                selectedTimeRange === range && styles.timeRangeButtonTextSelected
+              ]}>
+                {range}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -60,10 +67,10 @@ export default function ContextInput({ onComplete }: { onComplete: () => void })
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.continueButton, !bleeding && styles.continueButtonDisabled]}
+      <TouchableOpacity
+        style={[styles.continueButton, (!bleeding || !selectedTimeRange) && styles.continueButtonDisabled]}
         onPress={handleComplete}
-        disabled={!bleeding}
+        disabled={!bleeding || !selectedTimeRange}
       >
         <Text style={styles.continueButtonText}>Continue</Text>
         <MaterialIcons name="arrow-forward" size={24} color="white" />
@@ -93,22 +100,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 15,
   },
-  timeControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  timeRangeContainer: {
+    flexDirection: 'column',
+    gap: 10,
   },
-  timeButton: {
-    backgroundColor: '#FF4136',
+  timeRangeButton: {
     padding: 15,
     borderRadius: 10,
+    backgroundColor: '#333',
+    alignItems: 'center',
   },
-  timeText: {
-    fontSize: 24,
+  timeRangeButtonSelected: {
+    backgroundColor: '#1E88E5', // Different color from bleeding buttons
+  },
+  timeRangeButtonText: {
     color: '#fff',
-    marginHorizontal: 20,
-    minWidth: 40,
-    textAlign: 'center',
+    fontSize: 18,
+  },
+  timeRangeButtonTextSelected: {
+    fontWeight: 'bold',
   },
   bleedingOptions: {
     flexDirection: 'column',
