@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import Voice from '@react-native-voice/voice';
 
 // Mock MARCH-E steps for demo
 const TREATMENT_STEPS = [
@@ -31,6 +32,9 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
   const [currentStep, setCurrentStep] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [recognizedText, setRecognizedText] = useState('');
 
   // Function to speak the current step
   const speakCurrentStep = async () => {
@@ -56,6 +60,94 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     } catch (error) {
       console.error('Failed to speak:', error);
       setIsSpeaking(false);
+    }
+  };
+
+  // Voice recognition setup
+  useEffect(() => {
+    // Set up voice recognition
+    Voice.onSpeechStart = () => {
+      setIsListening(true);
+    };
+
+    Voice.onSpeechEnd = () => {
+      setIsListening(false);
+    };
+
+    Voice.onSpeechResults = (event) => {
+      if (event.value && event.value.length > 0) {
+        setRecognizedText(event.value[0].toLowerCase());
+      }
+    };
+
+    Voice.onSpeechError = (error) => {
+      console.error('Voice recognition error:', error);
+    };
+
+    return () => {
+      // Cleanup
+      stopListening();
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  // Process voice commands
+  useEffect(() => {
+    if (!recognizedText || recognizedText === '') return;
+
+    console.log('Recognized:', recognizedText);
+
+    // Process the recognized text for commands
+    if (recognizedText.includes('next') || recognizedText.includes('forward')) {
+      handleNext();
+    } else if (recognizedText.includes('previous') || recognizedText.includes('back')) {
+      handlePrevious();
+    } else if (
+      recognizedText.includes('done') ||
+      recognizedText.includes('complete') ||
+      recognizedText.includes('finish')
+    ) {
+      if (currentStep === TREATMENT_STEPS.length - 1) {
+        onRestart();
+      } else {
+        handleNext();
+      }
+    }
+
+    // Reset the recognized text
+    setRecognizedText('');
+  }, [recognizedText]);
+
+  // Handle voice control toggle
+  useEffect(() => {
+    if (voiceEnabled) {
+      startListening();
+    } else {
+      stopListening();
+    }
+  }, [voiceEnabled]);
+
+  // Start voice recognition
+  const startListening = async () => {
+    try {
+      await Voice.start('en-US');
+    } catch (error) {
+      console.error('Failed to start voice recognition:', error);
+      Alert.alert(
+        'Voice Recognition Error',
+        'There was a problem starting voice recognition. Please check app permissions.'
+      );
+      setVoiceEnabled(false);
+    }
+  };
+
+  // Stop voice recognition
+  const stopListening = async () => {
+    try {
+      await Voice.stop();
+      setIsListening(false);
+    } catch (error) {
+      console.error('Failed to stop voice recognition:', error);
     }
   };
 
@@ -93,15 +185,28 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Treatment Steps</Text>
-        <View style={styles.audioToggle}>
-          <Switch
-            value={audioEnabled}
-            onValueChange={handleAudioToggle}
-            trackColor={{ false: '#666', true: '#FF4136' }}
-          />
-          <Text style={styles.audioLabel}>
-            {isSpeaking ? 'Speaking...' : 'Read Aloud'}
-          </Text>
+        <View style={styles.controls}>
+          <View style={styles.controlItem}>
+            <Switch
+              value={audioEnabled}
+              onValueChange={handleAudioToggle}
+              trackColor={{ false: '#666', true: '#FF4136' }}
+            />
+            <Text style={styles.controlLabel}>
+              {isSpeaking ? 'Speaking...' : 'Read Aloud'}
+            </Text>
+          </View>
+
+          <View style={styles.controlItem}>
+            <Switch
+              value={voiceEnabled}
+              onValueChange={setVoiceEnabled}
+              trackColor={{ false: '#666', true: '#4CAF50' }}
+            />
+            <Text style={styles.controlLabel}>
+              {isListening ? 'Listening...' : 'Voice Control'}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -118,6 +223,15 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
         <Text style={styles.action}>
           {TREATMENT_STEPS[currentStep].action}
         </Text>
+
+        {voiceEnabled && (
+          <View style={styles.voiceCommandsHelp}>
+            <Text style={styles.voiceCommandsTitle}>Voice Commands:</Text>
+            <Text style={styles.voiceCommand}>"Next" - Go to next step</Text>
+            <Text style={styles.voiceCommand}>"Previous" - Go to previous step</Text>
+            <Text style={styles.voiceCommand}>"Done" or "Complete" - Finish treatment</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.navigation}>
@@ -159,29 +273,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 15,
   },
-  audioToggle: {
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  controlItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  audioLabel: {
+  controlLabel: {
     color: '#fff',
     marginLeft: 8,
+    minWidth: 85,
   },
   card: {
     backgroundColor: '#222',
     borderRadius: 15,
     padding: 20,
-    marginVertical: 20,
+    marginVertical: 5,
   },
   stepCount: {
     color: '#FF4136',
@@ -205,6 +324,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 10,
+    marginBottom: 15,
+  },
+  voiceCommandsHelp: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 15,
+  },
+  voiceCommandsTitle: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  voiceCommand: {
+    color: '#ddd',
+    fontSize: 14,
+    marginBottom: 4,
   },
   navigation: {
     flexDirection: 'row',
