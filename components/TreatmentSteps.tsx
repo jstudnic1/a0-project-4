@@ -127,34 +127,31 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
           {TREATMENT_STEPS[currentStep].action}
         </Text>
 
-        <View style={styles.voiceCommandContainer}>
-          <Text style={styles.voiceCommandsTitle}>Voice Commands:</Text>
-          <View style={styles.voiceCommandButtons}>
-            <TouchableOpacity
-              style={[styles.voiceButton, currentStep === 0 && styles.voiceButtonDisabled]}
-              onPress={handlePrevious}
-              disabled={currentStep === 0}
-            >
-              <Text style={styles.voiceButtonText}>Previous</Text>
-            </TouchableOpacity>
+        <View style={styles.commandButtons}>
+          <TouchableOpacity
+            style={[styles.commandButton, currentStep === 0 && styles.commandButtonDisabled]}
+            onPress={handlePrevious}
+            disabled={currentStep === 0}
+          >
+            <Text style={styles.commandButtonText}>Previous</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.voiceButton}
-              onPress={handleNext}
-              disabled={currentStep === TREATMENT_STEPS.length - 1}
-            >
-              <Text style={styles.voiceButtonText}>Next</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.commandButton}
+            onPress={handleNext}
+            disabled={currentStep === TREATMENT_STEPS.length - 1}
+          >
+            <Text style={styles.commandButtonText}>Next</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.voiceButton, styles.doneButton]}
-              onPress={handleDone}
-            >
-              <Text style={styles.voiceButtonText}>
-                {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[styles.commandButton, styles.doneButton]}
+            onPress={handleDone}
+          >
+            <Text style={styles.commandButtonText}>
+              {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -245,38 +242,26 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
   },
-  voiceCommandContainer: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 15,
-  },
-  voiceCommandsTitle: {
-    color: '#4CAF50',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  voiceCommandButtons: {
+  commandButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    marginTop: 15,
   },
-  voiceButton: {
+  commandButton: {
     backgroundColor: '#4CAF50',
     padding: 12,
     borderRadius: 8,
-    minWidth: 90,
+    flex: 1,
+    marginHorizontal: 4,
     alignItems: 'center',
-    marginBottom: 8,
   },
-  voiceButtonDisabled: {
+  commandButtonDisabled: {
     backgroundColor: '#666',
   },
   doneButton: {
     backgroundColor: '#FF9800',
   },
-  voiceButtonText: {
+  commandButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
