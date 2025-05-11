@@ -21,6 +21,7 @@
     "expo": "^53.0.0",
     "expo-camera": "~16.1.6",
     "expo-linear-gradient": "~14.1.4",
+    "expo-speech": "^13.1.7",
     "lucide-react-native": "0.509.0",
     "react": "19.0.0",
     "react-native": "0.79.2",

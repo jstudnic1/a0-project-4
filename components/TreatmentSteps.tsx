@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
 
 // Mock MARCH-E steps for demo
 const TREATMENT_STEPS = [
@@ -29,6 +30,52 @@ const TREATMENT_STEPS = [
 export default function TreatmentSteps({ onRestart }: { onRestart: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Function to speak the current step
+  const speakCurrentStep = async () => {
+    if (!audioEnabled) return;
+
+    // Stop any ongoing speech
+    await Speech.stop();
+
+    // Prepare text to speak
+    const currentStepData = TREATMENT_STEPS[currentStep];
+    const textToSpeak = `${currentStepData.title}. ${currentStepData.instruction} ${currentStepData.action}`;
+
+    setIsSpeaking(true);
+
+    try {
+      await Speech.speak(textToSpeak, {
+        language: 'en',
+        pitch: 1.0,
+        rate: 0.9,
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false)
+      });
+    } catch (error) {
+      console.error('Failed to speak:', error);
+      setIsSpeaking(false);
+    }
+  };
+
+  // Speak when the current step changes or audio is enabled
+  useEffect(() => {
+    speakCurrentStep();
+
+    // Cleanup
+    return () => {
+      Speech.stop();
+    };
+  }, [currentStep, audioEnabled]);
+
+  // Handle audio toggle
+  const handleAudioToggle = (value: boolean) => {
+    setAudioEnabled(value);
+    if (!value) {
+      Speech.stop();
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < TREATMENT_STEPS.length - 1) {
@@ -49,10 +96,12 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
         <View style={styles.audioToggle}>
           <Switch
             value={audioEnabled}
-            onValueChange={setAudioEnabled}
+            onValueChange={handleAudioToggle}
             trackColor={{ false: '#666', true: '#FF4136' }}
           />
-          <Text style={styles.audioLabel}>Read Aloud</Text>
+          <Text style={styles.audioLabel}>
+            {isSpeaking ? 'Speaking...' : 'Read Aloud'}
+          </Text>
         </View>
       </View>
 
@@ -72,7 +121,7 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
       </View>
 
       <View style={styles.navigation}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.navButton, currentStep === 0 && styles.navButtonDisabled]}
           onPress={handlePrevious}
           disabled={currentStep === 0}
@@ -82,7 +131,7 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
         </TouchableOpacity>
 
         {currentStep === TREATMENT_STEPS.length - 1 ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.navButton, styles.navButtonFinish]}
             onPress={onRestart}
           >
@@ -90,7 +139,7 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
             <MaterialIcons name="check" size={24} color="white" />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.navButton}
             onPress={handleNext}
           >
