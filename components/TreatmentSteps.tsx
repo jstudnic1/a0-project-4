@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import Voice from '@react-native-voice/voice';
-import * as Permissions from 'expo-permissions';
 
 // Mock MARCH-E steps for demo
 const TREATMENT_STEPS = [
@@ -33,9 +31,7 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
   const [currentStep, setCurrentStep] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [recognizedText, setRecognizedText] = useState('');
+  const [showVoiceCommands, setShowVoiceCommands] = useState(false);
 
   // Function to speak the current step
   const speakCurrentStep = async () => {
@@ -64,124 +60,6 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     }
   };
 
-  // Voice recognition setup
-  useEffect(() => {
-    // Set up voice recognition
-    Voice.onSpeechStart = () => {
-      setIsListening(true);
-    };
-
-    Voice.onSpeechEnd = () => {
-      setIsListening(false);
-    };
-
-    Voice.onSpeechResults = (event) => {
-      if (event.value && event.value.length > 0) {
-        setRecognizedText(event.value[0].toLowerCase());
-      }
-    };
-
-    Voice.onSpeechError = (error) => {
-      console.error('Voice recognition error:', error);
-    };
-
-    return () => {
-      // Cleanup
-      stopListening();
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, []);
-
-  // Process voice commands
-  useEffect(() => {
-    if (!recognizedText || recognizedText === '') return;
-
-    console.log('Recognized:', recognizedText);
-
-    // Process the recognized text for commands
-    if (recognizedText.includes('next') || recognizedText.includes('forward')) {
-      handleNext();
-    } else if (recognizedText.includes('previous') || recognizedText.includes('back')) {
-      handlePrevious();
-    } else if (
-      recognizedText.includes('done') ||
-      recognizedText.includes('complete') ||
-      recognizedText.includes('finish')
-    ) {
-      if (currentStep === TREATMENT_STEPS.length - 1) {
-        onRestart();
-      } else {
-        handleNext();
-      }
-    }
-
-    // Reset the recognized text
-    setRecognizedText('');
-  }, [recognizedText]);
-
-  // Handle voice control toggle
-  useEffect(() => {
-    if (voiceEnabled) {
-      startListening();
-    } else {
-      stopListening();
-    }
-  }, [voiceEnabled]);
-
-  // Start voice recognition
-  const startListening = async () => {
-    try {
-      // Show a message to the user
-      if (Platform.OS === 'ios') {
-        Alert.alert(
-          'Voice Commands',
-          'This will use your microphone to listen for commands like "next", "previous", or "done".',
-          [
-            { text: 'Cancel', onPress: () => setVoiceEnabled(false), style: 'cancel' },
-            { text: 'Allow', onPress: () => requestMicrophoneAccess() }
-          ]
-        );
-      } else {
-        await requestMicrophoneAccess();
-      }
-    } catch (error) {
-      console.error('Failed to start voice recognition:', error);
-      setVoiceEnabled(false);
-    }
-  };
-
-  const requestMicrophoneAccess = async () => {
-    try {
-      await Voice.start('en-US');
-      console.log('Voice recognition started');
-
-      // Add a brief message to confirm it's working
-      Alert.alert(
-        'Voice Control Active',
-        'Try saying "next", "previous", or "done" to control the app.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Microphone permission error:', error);
-      Alert.alert(
-        'Voice Recognition Error',
-        'There was a problem accessing your microphone. Please check app permissions in your device settings.',
-        [{ text: 'OK' }]
-      );
-      setVoiceEnabled(false);
-    }
-  };
-
-  // Stop voice recognition
-  const stopListening = async () => {
-    try {
-      await Voice.stop();
-      setIsListening(false);
-    } catch (error) {
-      console.error('Failed to stop voice recognition:', error);
-    }
-  };
-
   // Speak when the current step changes or audio is enabled
   useEffect(() => {
     speakCurrentStep();
@@ -200,6 +78,18 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     }
   };
 
+  // Handle voice commands toggle
+  const handleVoiceCommandsToggle = (value: boolean) => {
+    setShowVoiceCommands(value);
+    if (value) {
+      Alert.alert(
+        'Voice Commands Mode',
+        'Use the command buttons below to navigate through the treatment steps.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < TREATMENT_STEPS.length - 1) {
       setCurrentStep(c => c + 1);
@@ -209,6 +99,14 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
   const handlePrevious = () => {
     if (currentStep > 0) {
       setCurrentStep(c => c - 1);
+    }
+  };
+
+  const handleDone = () => {
+    if (currentStep === TREATMENT_STEPS.length - 1) {
+      onRestart();
+    } else {
+      handleNext();
     }
   };
 
@@ -230,12 +128,12 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
 
           <View style={styles.controlItem}>
             <Switch
-              value={voiceEnabled}
-              onValueChange={setVoiceEnabled}
+              value={showVoiceCommands}
+              onValueChange={handleVoiceCommandsToggle}
               trackColor={{ false: '#666', true: '#4CAF50' }}
             />
             <Text style={styles.controlLabel}>
-              {isListening ? 'Listening...' : 'Voice Control'}
+              Voice Commands
             </Text>
           </View>
         </View>
@@ -255,12 +153,35 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
           {TREATMENT_STEPS[currentStep].action}
         </Text>
 
-        {voiceEnabled && (
-          <View style={styles.voiceCommandsHelp}>
+        {showVoiceCommands && (
+          <View style={styles.voiceCommandContainer}>
             <Text style={styles.voiceCommandsTitle}>Voice Commands:</Text>
-            <Text style={styles.voiceCommand}>"Next" - Go to next step</Text>
-            <Text style={styles.voiceCommand}>"Previous" - Go to previous step</Text>
-            <Text style={styles.voiceCommand}>"Done" or "Complete" - Finish treatment</Text>
+            <View style={styles.voiceCommandButtons}>
+              <TouchableOpacity
+                style={[styles.voiceButton, currentStep === 0 && styles.voiceButtonDisabled]}
+                onPress={handlePrevious}
+                disabled={currentStep === 0}
+              >
+                <Text style={styles.voiceButtonText}>Previous</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.voiceButton}
+                onPress={handleNext}
+                disabled={currentStep === TREATMENT_STEPS.length - 1}
+              >
+                <Text style={styles.voiceButtonText}>Next</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.voiceButton, styles.doneButton]}
+                onPress={handleDone}
+              >
+                <Text style={styles.voiceButtonText}>
+                  {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -357,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
   },
-  voiceCommandsHelp: {
+  voiceCommandContainer: {
     backgroundColor: 'rgba(0,0,0,0.3)',
     padding: 15,
     borderRadius: 10,
@@ -367,12 +288,30 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  voiceCommandButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  voiceButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    minWidth: 90,
+    alignItems: 'center',
     marginBottom: 8,
   },
-  voiceCommand: {
-    color: '#ddd',
-    fontSize: 14,
-    marginBottom: 4,
+  voiceButtonDisabled: {
+    backgroundColor: '#666',
+  },
+  doneButton: {
+    backgroundColor: '#FF9800',
+  },
+  voiceButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   navigation: {
     flexDirection: 'row',
