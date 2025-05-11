@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import Voice from '@react-native-voice/voice';
+import * as Permissions from 'expo-permissions';
 
 // Mock MARCH-E steps for demo
 const TREATMENT_STEPS = [
@@ -130,12 +131,42 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
   // Start voice recognition
   const startListening = async () => {
     try {
-      await Voice.start('en-US');
+      // Show a message to the user
+      if (Platform.OS === 'ios') {
+        Alert.alert(
+          'Voice Commands',
+          'This will use your microphone to listen for commands like "next", "previous", or "done".',
+          [
+            { text: 'Cancel', onPress: () => setVoiceEnabled(false), style: 'cancel' },
+            { text: 'Allow', onPress: () => requestMicrophoneAccess() }
+          ]
+        );
+      } else {
+        await requestMicrophoneAccess();
+      }
     } catch (error) {
       console.error('Failed to start voice recognition:', error);
+      setVoiceEnabled(false);
+    }
+  };
+
+  const requestMicrophoneAccess = async () => {
+    try {
+      await Voice.start('en-US');
+      console.log('Voice recognition started');
+
+      // Add a brief message to confirm it's working
+      Alert.alert(
+        'Voice Control Active',
+        'Try saying "next", "previous", or "done" to control the app.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Microphone permission error:', error);
       Alert.alert(
         'Voice Recognition Error',
-        'There was a problem starting voice recognition. Please check app permissions.'
+        'There was a problem accessing your microphone. Please check app permissions in your device settings.',
+        [{ text: 'OK' }]
       );
       setVoiceEnabled(false);
     }
