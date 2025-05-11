@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 
@@ -31,7 +31,6 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
   const [currentStep, setCurrentStep] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [showVoiceCommands, setShowVoiceCommands] = useState(false);
 
   // Function to speak the current step
   const speakCurrentStep = async () => {
@@ -78,18 +77,6 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     }
   };
 
-  // Handle voice commands toggle
-  const handleVoiceCommandsToggle = (value: boolean) => {
-    setShowVoiceCommands(value);
-    if (value) {
-      Alert.alert(
-        'Voice Commands Mode',
-        'Use the command buttons below to navigate through the treatment steps.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
   const handleNext = () => {
     if (currentStep < TREATMENT_STEPS.length - 1) {
       setCurrentStep(c => c + 1);
@@ -114,28 +101,15 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Treatment Steps</Text>
-        <View style={styles.controls}>
-          <View style={styles.controlItem}>
-            <Switch
-              value={audioEnabled}
-              onValueChange={handleAudioToggle}
-              trackColor={{ false: '#666', true: '#FF4136' }}
-            />
-            <Text style={styles.controlLabel}>
-              {isSpeaking ? 'Speaking...' : 'Read Aloud'}
-            </Text>
-          </View>
-
-          <View style={styles.controlItem}>
-            <Switch
-              value={showVoiceCommands}
-              onValueChange={handleVoiceCommandsToggle}
-              trackColor={{ false: '#666', true: '#4CAF50' }}
-            />
-            <Text style={styles.controlLabel}>
-              Voice Commands
-            </Text>
-          </View>
+        <View style={styles.audioToggleContainer}>
+          <Switch
+            value={audioEnabled}
+            onValueChange={handleAudioToggle}
+            trackColor={{ false: '#666', true: '#FF4136' }}
+          />
+          <Text style={styles.audioLabel}>
+            {isSpeaking ? 'Speaking...' : 'Read Aloud'}
+          </Text>
         </View>
       </View>
 
@@ -153,37 +127,35 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
           {TREATMENT_STEPS[currentStep].action}
         </Text>
 
-        {showVoiceCommands && (
-          <View style={styles.voiceCommandContainer}>
-            <Text style={styles.voiceCommandsTitle}>Voice Commands:</Text>
-            <View style={styles.voiceCommandButtons}>
-              <TouchableOpacity
-                style={[styles.voiceButton, currentStep === 0 && styles.voiceButtonDisabled]}
-                onPress={handlePrevious}
-                disabled={currentStep === 0}
-              >
-                <Text style={styles.voiceButtonText}>Previous</Text>
-              </TouchableOpacity>
+        <View style={styles.voiceCommandContainer}>
+          <Text style={styles.voiceCommandsTitle}>Voice Commands:</Text>
+          <View style={styles.voiceCommandButtons}>
+            <TouchableOpacity
+              style={[styles.voiceButton, currentStep === 0 && styles.voiceButtonDisabled]}
+              onPress={handlePrevious}
+              disabled={currentStep === 0}
+            >
+              <Text style={styles.voiceButtonText}>Previous</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.voiceButton}
-                onPress={handleNext}
-                disabled={currentStep === TREATMENT_STEPS.length - 1}
-              >
-                <Text style={styles.voiceButtonText}>Next</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.voiceButton}
+              onPress={handleNext}
+              disabled={currentStep === TREATMENT_STEPS.length - 1}
+            >
+              <Text style={styles.voiceButtonText}>Next</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.voiceButton, styles.doneButton]}
-                onPress={handleDone}
-              >
-                <Text style={styles.voiceButtonText}>
-                  {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.voiceButton, styles.doneButton]}
+              onPress={handleDone}
+            >
+              <Text style={styles.voiceButtonText}>
+                {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
       </View>
 
       <View style={styles.navigation}>
@@ -225,28 +197,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 15,
   },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-  },
-  controlItem: {
+  audioToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  controlLabel: {
+  audioLabel: {
     color: '#fff',
     marginLeft: 8,
-    minWidth: 85,
   },
   card: {
     backgroundColor: '#222',
