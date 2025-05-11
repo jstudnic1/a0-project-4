@@ -89,14 +89,6 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
     }
   };
 
-  const handleDone = () => {
-    if (currentStep === TREATMENT_STEPS.length - 1) {
-      onRestart();
-    } else {
-      handleNext();
-    }
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -127,32 +119,10 @@ export default function TreatmentSteps({ onRestart }: { onRestart: () => void })
           {TREATMENT_STEPS[currentStep].action}
         </Text>
 
-        <View style={styles.commandButtons}>
-          <TouchableOpacity
-            style={[styles.commandButton, currentStep === 0 && styles.commandButtonDisabled]}
-            onPress={handlePrevious}
-            disabled={currentStep === 0}
-          >
-            <Text style={styles.commandButtonText}>Previous</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.commandButton}
-            onPress={handleNext}
-            disabled={currentStep === TREATMENT_STEPS.length - 1}
-          >
-            <Text style={styles.commandButtonText}>Next</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.commandButton, styles.doneButton]}
-            onPress={handleDone}
-          >
-            <Text style={styles.commandButtonText}>
-              {currentStep === TREATMENT_STEPS.length - 1 ? 'Finish' : 'Done'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.hintText}>
+          <MaterialIcons name="keyboard-voice" size={16} color="#4CAF50" style={styles.hintIcon} />
+          {" Say \"next\" for the next step"}
+        </Text>
       </View>
 
       <View style={styles.navigation}>
@@ -242,28 +212,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
   },
-  commandButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
+  hintText: {
+    color: '#aaa',
+    fontSize: 14,
+    marginTop: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
-  commandButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-    alignItems: 'center',
-  },
-  commandButtonDisabled: {
-    backgroundColor: '#666',
-  },
-  doneButton: {
-    backgroundColor: '#FF9800',
-  },
-  commandButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  hintIcon: {
+    marginRight: 4,
   },
   navigation: {
     flexDirection: 'row',
